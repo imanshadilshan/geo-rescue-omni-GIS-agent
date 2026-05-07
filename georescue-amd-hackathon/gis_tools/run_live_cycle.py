@@ -2,6 +2,8 @@
 
 import logging
 from pathlib import Path
+import json
+from datetime import datetime, timezone
 
 from live_flood_feed import generate_live_flood_polygon
 from flood_overlay import analyze_flood_impact
@@ -33,6 +35,28 @@ def run_cycle() -> None:
     logger.info("  - Route output: %s", route_path)
     logger.info("  - Latest route output: %s", latest_route_path)
     logger.info("  - Affected roads: %s", stats.get("total_affected_roads"))
+
+    # Emit a compact status JSON for UI polling
+    try:
+        processed_dir = Path(__file__).parent.parent / "data" / "processed"
+        status = {
+            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+            "severity": snapshot.get("derived_severity"),
+            "affected_roads": stats.get("total_affected_roads"),
+            "total_affected_length_m": stats.get("total_affected_length_m"),
+            "route_length_m": float(route_gdf["length_m"].sum()) if not route_gdf.empty else None,
+            "route_path": str(route_path),
+            "latest_route_path": str(latest_route_path),
+        }
+
+        status_path = processed_dir / "latest_status.json"
+        processed_dir.mkdir(parents=True, exist_ok=True)
+        with status_path.open("w", encoding="utf-8") as f:
+            json.dump(status, f, indent=2)
+
+        logger.info("  - Latest status written: %s", status_path)
+    except Exception as exc:
+        logger.error("Failed to write latest status: %s", exc)
 
 
 if __name__ == "__main__":
