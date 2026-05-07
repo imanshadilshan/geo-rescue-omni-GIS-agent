@@ -6,6 +6,7 @@ and exports affected road segments.
 """
 
 import logging
+import argparse
 from pathlib import Path
 from typing import Tuple, Optional, List
 
@@ -132,6 +133,22 @@ def create_sample_flood_polygon(
         raise
 
 
+def load_flood_polygon(flood_polygon_path: Path, roads_gdf: gpd.GeoDataFrame) -> Polygon:
+    """Load a flood polygon from GeoJSON and align CRS with roads."""
+    logger.info(f"Loading flood polygon from {flood_polygon_path}...")
+    flood_gdf = gpd.read_file(flood_polygon_path)
+
+    if flood_gdf.empty:
+        raise ValueError(f"Flood polygon file is empty: {flood_polygon_path}")
+
+    if roads_gdf.crs and flood_gdf.crs and roads_gdf.crs != flood_gdf.crs:
+        flood_gdf = flood_gdf.to_crs(roads_gdf.crs)
+
+    flood_polygon = unary_union(flood_gdf.geometry)
+    logger.info("  - Loaded polygon geometry from live/external source")
+    return flood_polygon
+
+
 def identify_blocked_roads(
     roads_gdf: gpd.GeoDataFrame,
     flood_polygon: Polygon,
@@ -165,15 +182,15 @@ def identify_blocked_roads(
         )
 
         # Filter only LineString geometries (roads)
-        from shapely.geometry import LineString
         blocked_roads = intersection_gdf[
             intersection_gdf.geometry.geom_type == 'LineString'
         ].copy()
 
         logger.info(f"  - Found {len(blocked_roads)} blocked road segments")
 
-        # Add flood impact metrics
-        blocked_roads['affected_length_m'] = blocked_roads.geometry.length
+        # Calculate lengths in a meter-based CRS to avoid geographic length warnings.
+        blocked_roads_m = blocked_roads.to_crs("EPSG:32644")
+        blocked_roads['affected_length_m'] = blocked_roads_m.geometry.length
         blocked_roads['flood_impact'] = 'partial'
         
         # Identify fully blocked roads (compare to original road length)
@@ -203,15 +220,18 @@ def calculate_impact_statistics(
         dict: Statistics on flood impact.
     """
     try:
-        total_affected_length = blocked_roads.geometry.length.sum()
+        total_affected_length = blocked_roads['affected_length_m'].sum()
         num_fully_blocked = (blocked_roads['flood_impact'] == 'fully_blocked').sum()
         num_partial = (blocked_roads['flood_impact'] == 'partial').sum()
 
         # Highway classification impact
         highway_impact = {}
         if 'highway' in blocked_roads.columns:
+            highway_values = blocked_roads['highway'].apply(
+                lambda x: ",".join(x) if isinstance(x, (list, tuple)) else str(x)
+            )
             highway_impact = (
-                blocked_roads['highway']
+                highway_values
                 .value_counts()
                 .to_dict()
             )
@@ -289,6 +309,7 @@ def save_flood_polygon_geojson(
 
 def analyze_flood_impact(
     roads_geojson_path: Optional[Path] = None,
+    flood_polygon_path: Optional[Path] = None,
 ) -> Tuple[Path, Path, dict]:
     """
     Main function to analyze flood impact on road network.
@@ -314,8 +335,11 @@ def analyze_flood_impact(
         # Load road network
         roads_gdf = load_road_geojson(roads_geojson_path)
 
-        # Create flood polygon
-        flood_polygon = create_sample_flood_polygon(roads_gdf)
+        # Load external polygon or fallback to sample flood zone
+        if flood_polygon_path and flood_polygon_path.exists():
+            flood_polygon = load_flood_polygon(flood_polygon_path, roads_gdf)
+        else:
+            flood_polygon = create_sample_flood_polygon(roads_gdf)
 
         # Identify blocked roads
         blocked_roads = identify_blocked_roads(roads_gdf, flood_polygon)
@@ -324,7 +348,11 @@ def analyze_flood_impact(
         stats = calculate_impact_statistics(blocked_roads)
         logger.info("Flood Impact Statistics:")
         logger.info(f"  - Total affected roads: {stats.get('total_affected_roads', 'N/A')}")
-        logger.info(f"  - Total affected length: {stats.get('total_affected_length_m', 'N/A'):.2f} m")
+        total_len = stats.get('total_affected_length_m')
+        if total_len is not None:
+            logger.info(f"  - Total affected length: {total_len:.2f} m")
+        else:
+            logger.info("  - Total affected length: N/A")
         logger.info(f"  - Fully blocked: {stats.get('fully_blocked', 'N/A')}")
         logger.info(f"  - Partially blocked: {stats.get('partially_blocked', 'N/A')}")
 
@@ -349,5 +377,16 @@ def analyze_flood_impact(
 
 
 if __name__ == "__main__":
-    # Example usage
-    blocked_roads_path, flood_polygon_path, stats = analyze_flood_impact()
+    parser = argparse.ArgumentParser(description="Analyze flood impact on road network")
+    parser.add_argument(
+        "--flood-polygon",
+        type=str,
+        default=None,
+        help="Optional path to flood polygon GeoJSON (live or external)",
+    )
+    args = parser.parse_args()
+
+    polygon_path = Path(args.flood_polygon) if args.flood_polygon else None
+    blocked_roads_path, flood_polygon_path, stats = analyze_flood_impact(
+        flood_polygon_path=polygon_path
+    )
