@@ -1,0 +1,13 @@
+torch
+torchvision
+torchaudio
+transformers
+accelerate
+qwen-vl-utils
+pillow
+geojson
+fastapi
+uvicorn[standard]
+python-multipart
+openai
+pydantic
