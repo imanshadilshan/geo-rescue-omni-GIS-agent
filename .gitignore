@@ -1,0 +1,167 @@
+# =============================================================================
+# GeoRescue Omni GIS Agent — .gitignore
+# =============================================================================
+
+# ── Dev sub-module (Minindu's local workspace) ────────────────────────────────
+geo-rescue-omni-GIS-agent-dev-minindu/
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.env/
+venv.bak/
+.Python
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+*.env
+!.env.example
+
+# ── Jupyter Notebooks ─────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── ML / AI artefacts ─────────────────────────────────────────────────────────
+# Model weights & checkpoints
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+*.gguf
+*.ggml
+*.q4_0
+*.q4_1
+*.q8_0
+checkpoints/
+runs/
+wandb/
+mlruns/
+lightning_logs/
+
+# Training data & datasets
+training_data/
+ml_serving/training_data/
+datasets/
+data/raw/
+data/processed/
+*.parquet
+*.feather
+*.arrow
+*.hdf5
+*.h5
+
+# ── GIS / geospatial data ─────────────────────────────────────────────────────
+*.tif
+*.tiff
+*.geotiff
+*.img
+*.ecw
+*.jp2
+*.sid
+*.shp
+*.shx
+*.dbf
+*.prj
+*.sbn
+*.sbx
+*.fbn
+*.fbx
+*.ain
+*.aih
+*.atx
+*.cpg
+*.qix
+*.mdb
+*.gpkg
+*.gdb/
+
+# Large GeoJSON / JSON data dumps (keep small reference files)
+*_large.geojson
+*_dump.json
+cache/
+tmp/
+tmp_*/
+
+# Sentinel / satellite imagery
+sentinel_data/
+*.SAFE/
+
+# ── Archives & uploads ────────────────────────────────────────────────────────
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+training_code_upload.zip
+training_data_upload.zip
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+*.out
+
+# ── OS artefacts ─────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ── IDE / editor ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ── Claude Code workspace ─────────────────────────────────────────────────────
+.claude/
+
+# ── Docker ───────────────────────────────────────────────────────────────────
+.dockerignore
+docker-compose.override.yml
+
+# ── Node (if any JS tooling is added) ────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.bak
+*.tmp
+*.temp
+.cache/
