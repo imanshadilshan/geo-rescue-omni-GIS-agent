@@ -19,3 +19,19 @@ class HealthResponse(BaseModel):
     llama_status: str
     qwen_status: str
     gpu_available: bool
+
+
+class GISStatusResponse(BaseModel):
+    """Response from GET /gis/status."""
+    status: str           # "ok" | "no_data"
+    data: Optional[dict] = None
+
+
+class GISCycleResponse(BaseModel):
+    """Response from POST /gis/run-cycle."""
+    status: str
+    severity: Optional[str] = None
+    affected_roads: Optional[int] = None
+    total_affected_length_m: Optional[float] = None
+    route_length_m: Optional[float] = None
+    elapsed_ms: Optional[float] = None

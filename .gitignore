@@ -68,6 +68,8 @@ ml_serving/training_data/
 datasets/
 data/raw/
 data/processed/
+# Keep the Colombo road graph so routing works out-of-the-box
+!ml_serving/data/processed/colombo_road_network_graph.graphml
 *.parquet
 *.feather
 *.arrow
