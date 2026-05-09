@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"e:/Zynaptrix/geo-rescue-omni-GIS-agent/georescue-omni-agent/agents\")",
+      "Bash(mkdir -p \"e:/Zynaptrix/geo-rescue-omni-GIS-agent/georescue-omni-agent/georescue\")"
+    ]
+  }
+}
