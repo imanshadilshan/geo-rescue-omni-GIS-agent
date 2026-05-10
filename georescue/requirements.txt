@@ -27,9 +27,17 @@ pyproj>=3.6.0                 # CRS transformations
 scikit-learn>=1.4.0           # Required by osmnx nearest_nodes on unprojected graphs
 
 # ── UI / Visualisation ───────────────────────────────────────────────────────
-streamlit>=1.35.0             # Requires st.status() — added in 1.28
-folium>=0.16.0
-streamlit-folium>=0.20.0
+#streamlit>=1.35.0             # Requires st.status() — added in 1.28
+#folium>=0.16.0
+#streamlit-folium>=0.20.0
+streamlit
+folium
+streamlit-folium
+osmnx
+networkx
+shapely
+requests
+
 
 # ── Utilities ────────────────────────────────────────────────────────────────
 numpy>=1.26.0
