@@ -1,3 +1,7 @@
 .env
 data
 .claude
+dist
+node_modules
+coverage
+*.log
