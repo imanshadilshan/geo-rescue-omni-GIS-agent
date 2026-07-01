@@ -9,7 +9,7 @@
 
 ---
 
-[![Python](https://img.shields.io/badge/Python-3.11--3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![AMD MI300X](https://img.shields.io/badge/AMD-Instinct%20MI300X-ED1C24?style=for-the-badge&logo=amd&logoColor=white)](https://www.amd.com/en/products/accelerators/instinct/mi300.html)
 [![CrewAI](https://img.shields.io/badge/CrewAI-Multi--Agent-FF6B35?style=for-the-badge)](https://crewai.com)
 [![Ollama](https://img.shields.io/badge/Ollama-Llama%203.2-000000?style=for-the-badge)](https://ollama.com)
@@ -171,13 +171,13 @@ georescue/
 
 <table>
 <tr><th>Tool</th><th>Version</th><th>Install</th><th>Required for</th></tr>
-<tr><td><b>Python</b></td><td>3.11 – 3.13 <br><small>(3.14 not yet supported by crewai)</small></td><td><a href="https://python.org">python.org</a></td><td>Everything</td></tr>
-<tr><td><b>Ollama</b></td><td>latest</td><td><a href="https://ollama.com/download">ollama.com</a> · or <code>winget install Ollama.Ollama</code></td><td>AI agent reasoning</td></tr>
-<tr><td><b>AMD ROCm</b> or <b>CUDA</b></td><td>6.x / 12.x</td><td>See GPU setup below</td><td>Qwen-VL vision only</td></tr>
+<tr><td><b>Python</b></td><td>3.11+</td><td><a href="https://python.org">python.org</a></td><td>Everything</td></tr>
+<tr><td><b>Ollama</b></td><td>latest</td><td><a href="https://ollama.com/download">ollama.com</a></td><td>AI agent reasoning</td></tr>
+<tr><td><b>AMD ROCm</b> or <b>CUDA</b></td><td>6.x / 12.x</td><td>See GPU setup below</td><td>Qwen-VL inference only</td></tr>
 </table>
 
-> **No GPU?** The Streamlit UI, agent pipeline, and local routing all run fine without a GPU.
-> Only the `/analyze-image` vision endpoint requires one. Everything else degrades gracefully.
+> **No GPU?** The Streamlit UI and agent pipeline run fine on CPU — only the  
+> `/analyze-image` vision endpoint requires a GPU. Everything else degrades gracefully.
 
 ---
 
@@ -185,125 +185,79 @@ georescue/
 
 ```bash
 git clone <repo-url>
-cd geo-rescue-omni-GIS-agent/georescue
+cd georescue
 ```
 
 ---
 
-### Step 2 — Create a virtual environment
-
-> **Important:** use Python 3.11–3.13. Python 3.14 is not yet supported by `crewai`.
-
-**Windows**
-```powershell
-# Check available versions
-py --list
-
-# Create venv with Python 3.13 (or 3.11 / 3.12)
-py -3.13 -m venv .venv
-
-# Activate
-.\.venv\Scripts\activate
-```
-
-**macOS / Linux**
-```bash
-python3.13 -m venv .venv
-source .venv/bin/activate
-```
-
----
-
-### Step 3 — Configure environment
+### Step 2 — Configure environment
 
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` and fill in the two required values:
+The defaults work for local development. Edit `.env` only if your ports differ or you want to change the Ollama model:
 
 ```bash
-# Sentinel Hub — register free at https://apps.sentinel-hub.com/dashboard/
-SENTINEL_CLIENT_ID=your-client-id
-SENTINEL_CLIENT_SECRET=your-client-secret
+# Key settings (full list in .env.example)
+OLLAMA_MODEL=llama3.2          # or llama3.1:8b for better tool-use
+GIS_API_URL=http://localhost:9000
+OLLAMA_BASE_URL=http://localhost:11434
 ```
-
-All other values have working defaults for local development.
 
 ---
 
-### Step 4 — Install dependencies
+### Step 3 — Install dependencies
 
 ```bash
-# Core: UI + agent framework + GIS (no GPU needed, ~3 min)
+# Core: UI + agent framework  (CPU only, ~2 min)
 pip install -r requirements.txt
-```
 
-For the optional GPU vision server (requires ROCm or CUDA):
-```bash
+# ML serving: GPU inference  (requires ROCm or CUDA, ~10 min)
 cd ml_serving && pip install -r requirements.txt && cd ..
 ```
 
+Or with Make:
+
+```bash
+make install       # core
+make install-ml    # ML serving
+```
+
 ---
 
-### Step 5 — Install Ollama and pull the model
+### Step 4 — Pull the Ollama model
 
-**Windows** (winget)
-```powershell
-winget install Ollama.Ollama
-```
-
-**macOS / Linux**
-```bash
-# Download from https://ollama.com/download
-```
-
-Then pull the model (≈ 2 GB):
 ```bash
 ollama pull llama3.2
 ```
 
 > Alternatives: `ollama pull llama3.1:8b` (stronger tool-use, 5 GB) or  
-> `ollama pull mistral:7b` (faster).
+> `ollama pull mistral:7b` (faster, slightly less accurate).
 
 ---
 
-### Step 6 — Start the services
+### Step 5 — Start services
 
-You need **two terminals**, both inside `georescue/` with the venv activated.
+Open **two terminals** in the `georescue/` directory:
 
-**Terminal 1 — Ollama LLM server**
+**Terminal 1 — GIS & Vision API server**
 ```bash
-ollama serve
+cd ml_serving
+uvicorn api.app:app --host 0.0.0.0 --port 9000 --reload
 ```
-→ Runs on **http://localhost:11434** (starts automatically on Windows after install)
+→ Swagger docs available at **http://localhost:9000/docs**
 
-**Terminal 2 — Streamlit UI** *(always required)*
+**Terminal 2 — Streamlit UI**
 ```bash
 streamlit run app.py
 ```
-→ Open **http://localhost:8501**
+→ Application available at **http://localhost:8501**
 
-**Terminal 3 — GIS & Vision API** *(optional — needs GPU for Qwen-VL)*
+Or launch both with a single command:
 ```bash
-cd ml_serving
-uvicorn api.app:app --host 0.0.0.0 --port 9000
+make all
 ```
-→ Swagger docs at **http://localhost:9000/docs**
-
-> **Without the Vision API** the app falls back to local OSMnx routing and a template  
-> report. All map interactions and the agent pipeline still work fully.
-
----
-
-### Degradation modes at a glance
-
-| GIS API `:9000` | Ollama `:11434` | What works |
-|:---:|:---:|---|
-| ✅ | ✅ | Full pipeline — live flood map + AI incident report |
-| ✅ | ❌ | Live GIS layers + structured template report |
-| ❌ | ✅ | Local OSMnx routing + Ollama AI report |
-| ❌ | ❌ | Local OSMnx routing + template report |
 
 ---
 
